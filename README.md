@@ -2,7 +2,7 @@
 
 This project is the source code that prototypes the Peer Sampling Service DIAS as illustrated in the following published [paper](http://www.casmodeling.com/content/pdf/2194-3206-1-19.pdf):
 
->M. Jelasity, S. Voulgaris, R. Guerraoui, A.M. Kermarrec and M. van Steen, _Gossip-based peer sampling_, ACM Trans. Comput. Syst. 25, 3, Article 8 (August 2007).
+>M. Jelasity, S. Voulgaris, R. Guerraoui, A.M. Kermarrec and M. van Steen, _Gossip-based peer sampling_, ACM Transaction on Computer Systems, 25, 3, Article 8, August 2007.
 
 This implementation is used extensively in the following [PhD thesis](http://evangelospournaras.com/wordpress/wp-content/uploads/2013/04/Multi-level-Reconfigurable-Self-organization-in-Overlay-Services1.pdf).
 
