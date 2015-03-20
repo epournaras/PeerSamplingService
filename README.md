@@ -1,6 +1,6 @@
 # The Peer Sampling Service
 
-This project is the source code that prototypes the Peer Sampling Service DIAS as illustrated in the following published [paper](http://www.casmodeling.com/content/pdf/2194-3206-1-19.pdf):
+This project is the source code that prototypes the Peer Sampling Service DIAS as illustrated in the following published [paper](http://dx.doi.org/10.1145/1275517.1275520):
 
 >M. Jelasity, S. Voulgaris, R. Guerraoui, A.M. Kermarrec and M. van Steen, _Gossip-based peer sampling_, ACM Transaction on Computer Systems, 25, 3, Article 8, August 2007.
 
