@@ -366,8 +366,16 @@ public class PeerSamplingService extends BasePeerlet{
      * also resets the state of the metrics retained during runtime
 	 */
     private void scheduleMeasurements(){
-        getPeer().getMeasurementLogger().addMeasurementLoggerListener(new MeasurementLoggerListener(){
-            public void measurementEpochEnded(MeasurementLog log, int epochNumber){
+        getPeer().getMeasurementLogger().addMeasurementLoggerListener(new MeasurementLoggerListener()
+        {
+        	@Override
+			public String getId() 
+			{
+				return "PeerSamplingService";
+			}
+        	
+            public void measurementEpochEnded(MeasurementLog log, int epochNumber)
+            {
 //                for(FingerDescriptor neighbor:viewManager.getView()){
 //                    getPeer().getMeasurementLogger().log(neighbor.getNetworkAddress(), 1);
 //                }
@@ -382,6 +390,8 @@ public class PeerSamplingService extends BasePeerlet{
                 log.log(epochNumber, PSSMeasurementTags.PAROS_MESS, parosMess);
                 parosMess=0.0;
             }
+
+			
         });
     }
 

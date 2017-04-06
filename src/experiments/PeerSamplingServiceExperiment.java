@@ -58,7 +58,11 @@ public class PeerSamplingServiceExperiment extends SimulatedExperiment{
 //		return new DelayLossNetworkInterfaceFactory(getEventScheduler(),new UniformDelayModel(0.15,2.5));
 //	}
 
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    {
+    	
+    	System.out.printf("PeerSamplingServiceExperiment (2017-03-30.b)\n" );
+    	
         Experiment.initEnvironment();
 		PeerSamplingServiceExperiment experiment = new PeerSamplingServiceExperiment();
 		experiment.init();
