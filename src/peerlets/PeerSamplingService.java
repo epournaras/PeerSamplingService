@@ -389,6 +389,16 @@ public class PeerSamplingService extends BasePeerlet{
 //                reactionsSent=0.0;
                 log.log(epochNumber, PSSMeasurementTags.PAROS_MESS, parosMess);
                 parosMess=0.0;
+                
+                // shrinking - add eag 2017-05-02
+                final int 	epoch_min = log.getMinEpochNumber(),
+    					kl = log.getMaxEpochNumber(),
+    					kf = Math.max(kl - 100 , epoch_min );
+                
+                System.out.printf( "PeerSamplingService: log shrink %d -> %d\n", kf, kl );
+                log.shrink(kf, kl);
+                
+                
             }
 
 			
