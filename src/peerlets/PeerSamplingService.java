@@ -395,7 +395,7 @@ public class PeerSamplingService extends BasePeerlet{
     					kl = log.getMaxEpochNumber(),
     					kf = Math.max(kl - 100 , epoch_min );
                 
-                System.out.printf( "PeerSamplingService: log shrink %d -> %d\n", kf, kl );
+                //System.out.printf( "PeerSamplingService: log shrink %d -> %d\n", kf, kl );
                 log.shrink(kf, kl);
                 
                 
