@@ -23,6 +23,8 @@ import enums.PSSMeasurementTags;
 import enums.MessageType;
 import enums.PeerSelectionPolicy;
 import enums.ViewPropagationPolicy;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Queue;
@@ -56,8 +58,11 @@ import util.SwapMessage;
  *
  * @author Evangelos
  */
-public class PeerSamplingService extends BasePeerlet{
+public class PeerSamplingService extends BasePeerlet
+{
 
+	private	final SimpleDateFormat 		dateFormatter;
+	
     private ViewManager viewManager;
     private final int c;
     private final int H;
@@ -97,6 +102,9 @@ public class PeerSamplingService extends BasePeerlet{
         this.T=T;
         this.A=A;
         this.B=B;
+        
+        // timestamp formatter
+        this.dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
    }
 
     /**
@@ -230,13 +238,34 @@ public class PeerSamplingService extends BasePeerlet{
      * Upon completion, the <code>ViewManager</code> is initiated, measurements
      * are sceduled and the events are triggered.
 	 */
-    private void bootstrap(){
+    private void bootstrap()
+    {
         Timer bootstrapTimer= getPeer().getClock().createNewTimer();
-        bootstrapTimer.addTimerListener(new TimerListener(){
-            public void timerExpired(Timer timer){
-                viewManager.setBootstrapPeers(getNeighborManager().getNeighbors());
-                scheduleMeasurements();
-                runActiveState();
+        bootstrapTimer.addTimerListener(new TimerListener()
+        {
+            public void timerExpired(Timer timer)
+            {
+            	final int numNeighbors = getNeighborManager().getNeighbors().size();
+            	System.out.printf( "%s : PeersamplingService timer expired; %d peers\n", dateFormatter.format( getPeer().getClock().getCurrentTime()), numNeighbors );
+				
+            	// mod eag 2017-05-26
+            	// need to keep trying! the bootstrap process can take time on large deployments
+            	if( numNeighbors == 0 )
+            	{
+            		bootstrapTimer.schedule(B);
+            		System.out.printf( "No peers found -> set timer for %d ms\n", B );
+            	}
+            	else
+            	{
+            		viewManager.setBootstrapPeers(getNeighborManager().getNeighbors());
+            		System.out.printf( "PeersamplingService: setBootstrapPeers completed\n" );
+                		
+            		scheduleMeasurements();
+            		System.out.printf( "PeersamplingService: scheduleMeasurements completed\n" );
+            		
+            		runActiveState();
+            		System.out.printf( "PeersamplingService: runActiveState completed\n" );
+            	}
             }
         });
         bootstrapTimer.schedule(B);
