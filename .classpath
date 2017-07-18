@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/Administrator/Documents/java-workspace/PeerSamplingService/dist/lib/colt.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Administrator/Documents/java-workspace/PeerSamplingService/dist/lib/log4j-1.2.14.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Administrator/Documents/java-workspace/PeerSamplingService/dist/lib/slf4j-api-1.5.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Administrator/Documents/java-workspace/PeerSamplingService/dist/lib/slf4j-log4j12-1.5.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jeromq"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Protopeer"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Distributed-Systems-Utilities"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/colt.jar"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/DSUtil.jar"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/log4j-1.2.14.jar"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/mina-core-1.1.3.jar"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/slf4j-api-1.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/slf4j-log4j12-1.5.0.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
