@@ -103,6 +103,9 @@ public class PeerSamplingService extends BasePeerlet
         this.A=A;
         this.B=B;
         
+        System.out.printf("PeerSamplingService (2018-02-07)\n" );
+        System.out.printf("PeerSamplingService : T = %d\n", this.T );
+        
         // timestamp formatter
         this.dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
    }
@@ -253,7 +256,7 @@ public class PeerSamplingService extends BasePeerlet
             	if( numNeighbors == 0 )
             	{
             		bootstrapTimer.schedule(B);
-            		System.out.printf( "No peers found -> set timer for %d ms\n", B );
+            		//System.out.printf( "No peers found -> set timer for %d ms\n", B );
             	}
             	else
             	{
