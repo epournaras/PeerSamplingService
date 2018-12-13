@@ -79,6 +79,10 @@ public class PeerSamplingService extends BasePeerlet
     private double actionsReceived=0.0;
     private double reactionsReceived=0.0;
     private double parosMess=0.0;
+    
+    // synchronize active and passive threads, and all other threads in the peerlet (e.g timers)
+  	// add edward + renato 2018-12-12
+  	final private Boolean						activeThread = false;
 
     /**
 	 * Initiates the peer sampling service. The systems is parameterized.
@@ -248,26 +252,29 @@ public class PeerSamplingService extends BasePeerlet
         {
             public void timerExpired(Timer timer)
             {
-            	final int numNeighbors = getNeighborManager().getNeighbors().size();
-            	System.out.printf( "%s : PeersamplingService timer expired; %d peers\n", dateFormatter.format( getPeer().getClock().getCurrentTime()), numNeighbors );
-				
-            	// mod eag 2017-05-26
-            	// need to keep trying! the bootstrap process can take time on large deployments
-            	if( numNeighbors == 0 )
+            	synchronized( activeThread )
             	{
-            		bootstrapTimer.schedule(B);
-            		//System.out.printf( "No peers found -> set timer for %d ms\n", B );
-            	}
-            	else
-            	{
-            		viewManager.setBootstrapPeers(getNeighborManager().getNeighbors());
-            		System.out.printf( "PeersamplingService: setBootstrapPeers completed\n" );
-                		
-            		scheduleMeasurements();
-            		System.out.printf( "PeersamplingService: scheduleMeasurements completed\n" );
-            		
-            		runActiveState();
-            		System.out.printf( "PeersamplingService: runActiveState completed\n" );
+	            	final int numNeighbors = getNeighborManager().getNeighbors().size();
+	            	System.out.printf( "%s : PeersamplingService timer expired; %d peers\n", dateFormatter.format( getPeer().getClock().getCurrentTime()), numNeighbors );
+					
+	            	// mod eag 2017-05-26
+	            	// need to keep trying! the bootstrap process can take time on large deployments
+	            	if( numNeighbors == 0 )
+	            	{
+	            		bootstrapTimer.schedule(B);
+	            		//System.out.printf( "No peers found -> set timer for %d ms\n", B );
+	            	}
+	            	else
+	            	{
+	            		viewManager.setBootstrapPeers(getNeighborManager().getNeighbors());
+	            		System.out.printf( "PeersamplingService: setBootstrapPeers completed\n" );
+	                		
+	            		scheduleMeasurements();
+	            		System.out.printf( "PeersamplingService: scheduleMeasurements completed\n" );
+	            		
+	            		runActiveState();
+	            		System.out.printf( "PeersamplingService: runActiveState completed\n" );
+	            	}
             	}
             }
         });
@@ -289,27 +296,31 @@ public class PeerSamplingService extends BasePeerlet
     private void runActiveState(){
         Timer activeStateTimer=getPeer().getClock().createNewTimer();
         activeStateTimer.addTimerListener(new TimerListener() {
-            public void timerExpired(Timer timer) {
-                FingerDescriptor neighbor=viewManager.selectPeer();
-                if(neighbor!=null){
-                    switch(viewPropagationPolicy){
-                        case PUSHPULL:
-                            sendBuffer(MessageType.ACTION, neighbor.getNetworkAddress());
-                            break;
-                        case PUSH:
-                            SwapMessage message=new SwapMessage();
-                            message.type=MessageType.ACTION;
-                            message.buffer=new ArrayList();
-                            getPeer().sendMessage(neighbor.getNetworkAddress(), message);
-                            parosMess++;
-                            break;
-                        default:
-                            //other view propagation policy
-                    }
-                    actionsSent=actionsSent+1.0;
-                }
-                viewManager.increaseAge(A);
-                runActiveState(); //recursive call
+            public void timerExpired(Timer timer) 
+            {
+            	synchronized( activeThread )
+            	{
+	                FingerDescriptor neighbor=viewManager.selectPeer();
+	                if(neighbor!=null){
+	                    switch(viewPropagationPolicy){
+	                        case PUSHPULL:
+	                            sendBuffer(MessageType.ACTION, neighbor.getNetworkAddress());
+	                            break;
+	                        case PUSH:
+	                            SwapMessage message=new SwapMessage();
+	                            message.type=MessageType.ACTION;
+	                            message.buffer=new ArrayList();
+	                            getPeer().sendMessage(neighbor.getNetworkAddress(), message);
+	                            parosMess++;
+	                            break;
+	                        default:
+	                            //other view propagation policy
+	                    }
+	                    actionsSent=actionsSent+1.0;
+	                }
+	                viewManager.increaseAge(A);
+	                runActiveState(); //recursive call
+            	}// synchronized
             }
         });
         activeStateTimer.schedule(Time.inMilliseconds(this.T-((Math.random()-0.5)*this.T))); //1e3
@@ -325,32 +336,37 @@ public class PeerSamplingService extends BasePeerlet
      * Sampling Service can process
      *
 	 */
-    private void runPassiveState(SwapMessage swapMessage){
-        switch(swapMessage.type){
-            case REACTION:
-                this.reactionsReceived=this.reactionsReceived+1.0;
-                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
-                    this.viewManager.select(swapMessage.buffer);
-                }
-                else{
-                    // do nothing
-                }
-                break;
-            case ACTION:
-                this.actionsReceived=this.actionsReceived+1.0;
-                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
-                    this.sendBuffer(MessageType.REACTION, swapMessage.getSourceAddress());
-                    this.reactionsSent=this.reactionsSent+1.0;
-                    this.viewManager.select(swapMessage.buffer);
-                }
-                else{
-                    // do nothing
-                }
-                break;
-            default:
-                // another message type has been received and just ignore it...
-        }
-        viewManager.increaseAge(A);
+    private void runPassiveState(SwapMessage swapMessage)
+    {
+    	synchronized( activeThread )
+    	{
+	        switch(swapMessage.type)
+	        {
+	            case REACTION:
+	                this.reactionsReceived=this.reactionsReceived+1.0;
+	                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
+	                    this.viewManager.select(swapMessage.buffer);
+	                }
+	                else{
+	                    // do nothing
+	                }
+	                break;
+	            case ACTION:
+	                this.actionsReceived=this.actionsReceived+1.0;
+	                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
+	                    this.sendBuffer(MessageType.REACTION, swapMessage.getSourceAddress());
+	                    this.reactionsSent=this.reactionsSent+1.0;
+	                    this.viewManager.select(swapMessage.buffer);
+	                }
+	                else{
+	                    // do nothing
+	                }
+	                break;
+	            default:
+	                // another message type has been received and just ignore it...
+	        }
+	        viewManager.increaseAge(A);
+    	}// synchronised
     }
 
     /**

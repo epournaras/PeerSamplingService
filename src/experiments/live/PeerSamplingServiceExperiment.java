@@ -63,7 +63,7 @@ public class PeerSamplingServiceExperiment extends ZMQExperiment{
     public static void main(String[] args) 
     {
     	
-    	System.out.printf("PeerSamplingServiceExperiment (2017-04-06.c)\n" );
+    	System.out.printf("PeerSamplingServiceExperiment (2018-12-12.c)\n" );
     	
     	if (args.length != 2) 
 		{
