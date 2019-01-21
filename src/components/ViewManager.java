@@ -167,6 +167,26 @@ public class ViewManager{
             getView().set(j, ai);
         }
     }
+    
+    // hasDuplicatesInView: check if the view contains duplicate peers; should never be the case
+    // add edward 2019-01-14
+    public boolean hasDuplicatesInView()
+    {
+    	synchronized(this.view)
+    	{
+	        for(int i=0;i < getView().size();i++)
+	        {                         
+	        	for(int j=(i+1);j < getView().size();j++) 
+	        	{
+	        		if( getView().get(i).equals( getView().get(j)) )
+	        			return true;
+	        	}
+	        }
+	        
+	        return false;
+    	}
+        
+    }
 
     /**
 	 * Returns c/2-1 neighbors from the head of the view. These neighbors are

@@ -11,5 +11,6 @@
 	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/slf4j-api-1.5.0.jar"/>
 	<classpathentry kind="lib" path="/Users/edward/Documents/workspace/PeerSamplingService/dist/lib/slf4j-log4j12-1.5.0.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jeromq"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/DIAS-Logging-System"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

@@ -23,16 +23,23 @@ import enums.PSSMeasurementTags;
 import enums.MessageType;
 import enums.PeerSelectionPolicy;
 import enums.ViewPropagationPolicy;
+import loggers.RawLog;
+import pgpersist.PersistenceClient;
+import pgpersist.SqlDataItem;
+import pgpersist.SqlInsertTemplate;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Queue;
 import protopeer.BasePeerlet;
 import protopeer.Peer;
 import protopeer.time.Timer;
 import protopeer.time.TimerListener;
 import protopeer.Finger;
+import dsutil.generic.state.ArithmeticState;
 import dsutil.protopeer.FingerDescriptor;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -83,6 +90,16 @@ public class PeerSamplingService extends BasePeerlet
     // synchronize active and passive threads, and all other threads in the peerlet (e.g timers)
   	// add edward + renato 2018-12-12
   	final private Boolean						activeThread = false;
+  	
+  	// persistence to PostgreSQL
+    // edward gaere | 2019-01-18
+    private 	PersistenceClient		persistenceClient = null;
+    
+    private final String				sql_insert_template;
+    
+    // network id to which this peer is attached; used for persistence
+    // edward gaere | 2019-01-18
+    private int							diasNetworkId = 0;
 
     /**
 	 * Initiates the peer sampling service. The systems is parameterized.
@@ -112,7 +129,55 @@ public class PeerSamplingService extends BasePeerlet
         
         // timestamp formatter
         this.dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        	    
+	    // for persisting the peer sampling service view to PostgreSQL
+	    sql_insert_template = "INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,has_duplicates,fingers) VALUES ( {dt}, {peer}, {network}, {epoch}, {thread_id}, {func}, {num_fingers}, {has_duplicates}, {fingers} )";
+	    
    }
+    
+    public void addPersistenceClient( PersistenceClient		persistenceClient )
+    {
+		if( persistenceClient == null ) return;
+    	this.persistenceClient = persistenceClient;
+    	
+    	  // initialise persistence client with the template SQL insert string 
+ 		this.persistenceClient.sendSqlInsertTemplate( new SqlInsertTemplate( "pss", sql_insert_template ) );
+ 		
+ 		System.out.printf( "PeerSamplingService::init insert template sent to client\n" );
+    }
+	
+	public void setDIASNetworkId(int argDIASNetworkId)
+	{
+		this.diasNetworkId = argDIASNetworkId;
+	}
+	
+	void persistView(String function_name, List<FingerDescriptor> fingers)
+	{
+		if( this.persistenceClient == null ) return;
+		
+		LinkedHashMap<String,String>			record = new LinkedHashMap<String,String>();
+		
+		// REM
+		// INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,fingers) 
+		// VALUES ( {dt}, {peer}, {network}, {epoch}, {thread_id}, {func}, {num_fingers}, {fingers} )
+		record.put("dt", "'" + dateFormatter.format( getPeer().getClock().getCurrentTime() )  + "'" );
+		record.put("network", Integer.toString(this.diasNetworkId)  );
+		record.put("peer", Integer.toString(getPeer().getIndexNumber())  );
+		record.put("epoch", Integer.toString(getPeer().getMeasurementLogger().getCurrentEpochNumber()) );
+		record.put("thread_id", Long.toString(Thread.currentThread().getId()));
+		record.put("func", "'" + function_name + "'");
+		record.put("num_fingers",  Integer.toString(fingers.size()));
+		record.put("has_duplicates",  Boolean.toString(this.viewManager.hasDuplicatesInView()));
+		
+		// only store the finger (IP::port), which is how PSS distinguishes between peers
+		String 	finger_string = "";
+		for(FingerDescriptor f:fingers)
+			finger_string += f.getFinger() + "|";
+		
+		record.put("fingers", "'" + finger_string + "'");
+		
+		this.persistenceClient.sendSqlDataItem( new SqlDataItem( "pss", record ) );
+	}
 
     /**
 	 * Gets the initial neighbors from the <code>NeighborManager</code>. In this
@@ -206,6 +271,7 @@ public class PeerSamplingService extends BasePeerlet
 
         }
     }
+    
 
     /**
 	 * Extracts the finger form the random returned descriptor.
@@ -319,7 +385,11 @@ public class PeerSamplingService extends BasePeerlet
 	                    actionsSent=actionsSent+1.0;
 	                }
 	                viewManager.increaseAge(A);
+	                
+	            	
 	                runActiveState(); //recursive call
+	             
+	            	
             	}// synchronized
             }
         });
@@ -345,7 +415,7 @@ public class PeerSamplingService extends BasePeerlet
 	            case REACTION:
 	                this.reactionsReceived=this.reactionsReceived+1.0;
 	                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
-	                    this.viewManager.select(swapMessage.buffer);
+	                    this.viewManager.select(swapMessage.buffer); // -> ViewManager.appendUnique
 	                }
 	                else{
 	                    // do nothing
@@ -356,7 +426,7 @@ public class PeerSamplingService extends BasePeerlet
 	                if(viewPropagationPolicy==viewPropagationPolicy.PUSHPULL){
 	                    this.sendBuffer(MessageType.REACTION, swapMessage.getSourceAddress());
 	                    this.reactionsSent=this.reactionsSent+1.0;
-	                    this.viewManager.select(swapMessage.buffer);
+	                    this.viewManager.select(swapMessage.buffer); // -> ViewManager.appendUnique
 	                }
 	                else{
 	                    // do nothing
@@ -366,8 +436,12 @@ public class PeerSamplingService extends BasePeerlet
 	                // another message type has been received and just ignore it...
 	        }
 	        viewManager.increaseAge(A);
+	        
+	         	// save view PSS to table
+        	persistView("runPassiveState", this.viewManager.getView());
+        	
     	}// synchronised
-    }
+    }// runPassiveState
 
     /**
 	 * The common operations that are executed between the active and the
