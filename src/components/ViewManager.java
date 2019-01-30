@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import enums.PeerSelectionPolicy;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import protopeer.Finger;
@@ -64,7 +65,10 @@ public class ViewManager{
         this.H=H;
         this.S=S;
         this.policy=peerSelectionPolicy;
-        this.view=new ArrayList<FingerDescriptor>();
+        
+        // mod edward + renato | 2019-01-23
+        //this.view=new ArrayList<FingerDescriptor>();
+        this.view= Collections.synchronizedList( new ArrayList<FingerDescriptor>());
         this.samples=new ConcurrentLinkedQueue<FingerDescriptor>();
         this.ageManager=new AgeDescriptorManager();
         this.myDescriptor=new FingerDescriptor(myFinger);

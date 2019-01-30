@@ -18,6 +18,8 @@
 
 package experiments.live;
 
+import java.util.ArrayList;
+
 import enums.PSSMeasurementTags;
 import enums.PeerSelectionPolicy;
 import enums.ViewPropagationPolicy;
@@ -63,7 +65,7 @@ public class PeerSamplingServiceExperiment extends ZMQExperiment{
     public static void main(String[] args) 
     {
     	
-    	System.out.printf("PeerSamplingServiceExperiment (2018-12-12.c)\n" );
+    	System.out.printf("PeerSamplingServiceExperiment (2019-01-29)\n" );
     	
     	if (args.length != 2) 
 		{
@@ -78,28 +80,52 @@ public class PeerSamplingServiceExperiment extends ZMQExperiment{
 		
         Experiment.initEnvironment();
         
+        
+        
         // set configuration
         MainConfiguration.getSingleton().peerIndex = index;
      	MainConfiguration.getSingleton().peerPort = port;
-     		
+     	
+      		
 		PeerSamplingServiceExperiment experiment = new PeerSamplingServiceExperiment();
 		
 		experiment.init();
+		
+		ArrayList<Peer> 	listPeers = 	new ArrayList<Peer>();
+		
 		PeerFactory peerFactory=new PeerFactory() 
 		{
 			public Peer createPeer(int peerIndex, Experiment experiment) 
 			{
 				Peer newPeer = new Peer(peerIndex);
+				
+				listPeers.add(newPeer);
 				if (peerIndex == 0) 
 				{
+					// as in DIAS, the Bootstrap Server peer only has a single peerlet, the BootstrapServer
+					// edward | 2019-01-29
 					newPeer.addPeerlet(new BootstrapServer());
 					System.out.format( "BootstrapServer created\n" );
 				}
-				newPeer.addPeerlet(new NeighborManager());
-				newPeer.addPeerlet(new SimpleConnector());
-                                newPeer.addPeerlet(new BootstrapClient(experiment.getAddressToBindTo(0), new SimplePeerIdentifierGenerator()));
-				newPeer.addPeerlet(new PeerSamplingService(c, H, S, peerSelectionPolicy, viewPropagationPolicy, T, A, B));
-				return newPeer;
+				else
+				{
+				
+					newPeer.addPeerlet(new NeighborManager());
+					
+					newPeer.addPeerlet(new SimpleConnector());
+	                                
+					BootstrapClient	bsc = new BootstrapClient(experiment.getAddressToBindTo(0), new SimplePeerIdentifierGenerator());
+					newPeer.addPeerlet(bsc);
+					
+	                PeerSamplingService pss = new PeerSamplingService(c, H, S, peerSelectionPolicy, viewPropagationPolicy, T, A, B);
+	                newPeer.addPeerlet(pss);
+	                
+	                // kick off the bootstrap process
+	                //bsc.SendBootstrapHello();
+	                //System.out.format( "BootstrapHello sent\n" );
+				}
+				
+                return newPeer;
 			}
 		};
 		
@@ -110,36 +136,29 @@ public class PeerSamplingServiceExperiment extends ZMQExperiment{
 				+ experiment.getPeers().elementAt(myPeerIndex)
 						.getNetworkAddress());
 		
+		// in DIAS, the BoostrapClient does not initially connect to the BoostrapServer
+		// the connection only takes places when a device connects to the peer. at which point the BootstrapClient.SendBootstrapHello() method is called
+		// as there are no devices nor DIAS in this simulation, we wait a while and then send the BootstrapHello message to the BoostrapServer
+		// edward | 2019-01-29
+		System.out.println( "Waiting for sending Bootstrap Hello");
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-
-		//run the simulation
-		/*
-		 * experiment.initPeers(0,N,peerFactory);
-		experiment.startPeers(0,N);
+		for( Peer peer : listPeers)
+		{
+			if( peer.getIndexNumber() != 0 )
+			{
+				((BootstrapClient)peer.getPeerletOfType(BootstrapClient.class)).SendBootstrapHello();
+				System.out.println( "Bootstrap Hello sent");
+			}
+		}
 		
-		experiment.runSimulation(Time.inSeconds(runDuration));
-
-        ResultsIllustrator results=new ResultsIllustrator(experiment);
-
-        System.out.println("*** RESULTS PER EPOCH ***\n");
-		for (int epochNumber=0; epochNumber<=runDuration; epochNumber++) {
-			results.printEpochNumber(epochNumber);
-            results.printSumEpochMeasurement(epochNumber, PSSMeasurementTags.MESSAGE_ACTION_RECEIVED);
-			results.printSumEpochMeasurement(epochNumber, PSSMeasurementTags.MESSAGE_REACTION_REVEIVED);
-            results.printSumEpochMeasurement(epochNumber, PSSMeasurementTags.MESSAGE_ACTION_SENT);
-            results.printSumEpochMeasurement(epochNumber, PSSMeasurementTags.MESSAGE_REACTION_SENT);
-            results.printEpochInDegreeStDev(epochNumber);
-            if(epochNumber==140)
-                results.printEpochInDegreeNodesProportion(epochNumber);
-            results.clearEpochLog(epochNumber);
-            System.out.println();
-        }
-        System.out.println("\n***********************************************\n");
-        System.out.println("\n*** GLOBAL RESULTS ***\n");
-//        results.printSumAggregateMeasurement(PSSMeasurementTags.MESSAGE_ACTION);
-//        results.printSumAggregateMeasurement(PSSMeasurementTags.MESSAGE_REACTION);
- * 
- * */
+		
+		
  
     }
 

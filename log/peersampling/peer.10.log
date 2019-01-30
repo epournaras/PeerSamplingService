@@ -1,0 +1,1 @@
+java -Xmx128M -cp build/classes:../Protopeer/bin:../jeromq/bin:dist/lib/* experiments.live.PeerSamplingServiceExperiment 10 0

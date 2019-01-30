@@ -124,7 +124,7 @@ public class PeerSamplingService extends BasePeerlet
         this.A=A;
         this.B=B;
         
-        System.out.printf("PeerSamplingService (2018-02-07)\n" );
+        System.out.printf("PeerSamplingService (2019-01-29)\n" );
         System.out.printf("PeerSamplingService : T = %d\n", this.T );
         
         // timestamp formatter
@@ -437,8 +437,11 @@ public class PeerSamplingService extends BasePeerlet
 	        }
 	        viewManager.increaseAge(A);
 	        
-	         	// save view PSS to table
+	         // save view PSS to table
         	persistView("runPassiveState", this.viewManager.getView());
+        	
+        	// some debugging
+        	System.out.printf( "PeersamplingService::runPassiveState: view size = %d, duplicates = %b\n", this.viewManager.getView().size(), this.viewManager.hasDuplicatesInView()  );
         	
     	}// synchronised
     }// runPassiveState
