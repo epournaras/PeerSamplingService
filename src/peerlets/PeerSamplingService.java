@@ -31,6 +31,7 @@ import pgpersist.SqlInsertTemplate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Queue;
@@ -97,6 +98,8 @@ public class PeerSamplingService extends BasePeerlet
     
     private final String				sql_insert_template;
     
+    private Boolean						peristViewActive = false;
+    
     // network id to which this peer is attached; used for persistence
     // edward gaere | 2019-01-18
     private int							diasNetworkId = 0;
@@ -134,6 +137,27 @@ public class PeerSamplingService extends BasePeerlet
 	    sql_insert_template = "INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,has_duplicates,fingers) VALUES ( {dt}, {peer}, {network}, {epoch}, {thread_id}, {func}, {num_fingers}, {has_duplicates}, {fingers} )";
 	    
    }
+    
+   public void setPeristViewActive(Boolean active)
+   {
+	   this.peristViewActive = active;
+   }
+    
+    // return a deep copy of all the elements currently in the PeerSampling view 
+    // add edward | 2019-03-31
+    public HashSet<FingerDescriptor> getFingersInView()
+    {
+    	synchronized( activeThread )
+    	{
+    		HashSet<FingerDescriptor> 	hs = new HashSet<FingerDescriptor>();
+        	
+        	for( FingerDescriptor finger : this.viewManager.getView() )
+        		hs.add(finger);
+        	
+        	return hs;
+    	}
+    	
+    }
     
     public void addPersistenceClient( PersistenceClient		persistenceClient )
     {
@@ -438,10 +462,11 @@ public class PeerSamplingService extends BasePeerlet
 	        viewManager.increaseAge(A);
 	        
 	         // save view PSS to table
-        	persistView("runPassiveState", this.viewManager.getView());
+	        if( this.peristViewActive )
+	        	persistView("runPassiveState", this.viewManager.getView());
         	
         	// some debugging
-        	System.out.printf( "PeersamplingService::runPassiveState: view size = %d, duplicates = %b\n", this.viewManager.getView().size(), this.viewManager.hasDuplicatesInView()  );
+        	//System.out.printf( "PeersamplingService::runPassiveState: view size = %d, duplicates = %b\n", this.viewManager.getView().size(), this.viewManager.hasDuplicatesInView()  );
         	
     	}// synchronised
     }// runPassiveState
