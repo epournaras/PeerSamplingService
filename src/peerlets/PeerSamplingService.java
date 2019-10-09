@@ -54,14 +54,14 @@ import util.SwapMessage;
 
 /**
  * This peerlet implements the Peer Samplign Service. This is a gossiping
- * framework that can be used for implementing a number of gossiping 
+ * framework that can be used for implementing a number of gossiping
  * protocols. The implementation is based on the work presented in the
  * following paper:
- * 
- * M. Jelasity, S. Voulgaris, R. Guerraoui, A.-M. Kermarrec, M. van Steen., 
+ *
+ * M. Jelasity, S. Voulgaris, R. Guerraoui, A.-M. Kermarrec, M. van Steen.,
  * Gossip-based peer sampling, ACM Transactions on Computer Systems, August 2007
- * 
- * Other peerlets can access the Peer Sampling Service peerlet and request a 
+ *
+ * Other peerlets can access the Peer Sampling Service peerlet and request a
  * random neighbor or the random view that exist the momment of the request.
  *
  * @author Evangelos
@@ -70,7 +70,7 @@ public class PeerSamplingService extends BasePeerlet
 {
 
 	private	final SimpleDateFormat 		dateFormatter;
-	
+
     private ViewManager viewManager;
     private final int c;
     private final int H;
@@ -87,19 +87,19 @@ public class PeerSamplingService extends BasePeerlet
     private double actionsReceived=0.0;
     private double reactionsReceived=0.0;
     private double parosMess=0.0;
-    
+
     // synchronize active and passive threads, and all other threads in the peerlet (e.g timers)
   	// add edward + renato 2018-12-12
-  	final private Boolean						activeThread = false;
-  	
+  	final private Boolean						activeThread = new Boolean(false);
+
   	// persistence to PostgreSQL
     // edward gaere | 2019-01-18
     private 	PersistenceClient		persistenceClient = null;
-    
+
     private final String				sql_insert_template;
-    
-    private Boolean						peristViewActive = false;
-    
+
+    private boolean						peristViewActive = false;
+
     // network id to which this peer is attached; used for persistence
     // edward gaere | 2019-01-18
     private int							diasNetworkId = 0;
@@ -126,63 +126,63 @@ public class PeerSamplingService extends BasePeerlet
         this.T=T;
         this.A=A;
         this.B=B;
-        
+
         System.out.printf("PeerSamplingService (2019-01-29)\n" );
         System.out.printf("PeerSamplingService : T = %d\n", this.T );
-        
+
         // timestamp formatter
         this.dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        	    
+
 	    // for persisting the peer sampling service view to PostgreSQL
 	    sql_insert_template = "INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,has_duplicates,fingers) VALUES ( {dt}, {peer}, {network}, {epoch}, {thread_id}, {func}, {num_fingers}, {has_duplicates}, {fingers} )";
-	    
+
    }
-    
+
    public void setPeristViewActive(Boolean active)
    {
-	   this.peristViewActive = active;
+	   this.peristViewActive = active.booleanValue();
    }
-    
-    // return a deep copy of all the elements currently in the PeerSampling view 
+
+    // return a deep copy of all the elements currently in the PeerSampling view
     // add edward | 2019-03-31
     public HashSet<FingerDescriptor> getFingersInView()
     {
     	synchronized( activeThread )
     	{
     		HashSet<FingerDescriptor> 	hs = new HashSet<FingerDescriptor>();
-        	
+
         	for( FingerDescriptor finger : this.viewManager.getView() )
         		hs.add(finger);
-        	
+
         	return hs;
     	}
-    	
+
     }
-    
+
     public void addPersistenceClient( PersistenceClient		persistenceClient )
     {
 		if( persistenceClient == null ) return;
     	this.persistenceClient = persistenceClient;
-    	
-    	  // initialise persistence client with the template SQL insert string 
+
+    	  // initialise persistence client with the template SQL insert string
  		this.persistenceClient.sendSqlInsertTemplate( new SqlInsertTemplate( "pss", sql_insert_template ) );
- 		
+
  		System.out.printf( "PeerSamplingService::init insert template sent to client\n" );
     }
-	
+
 	public void setDIASNetworkId(int argDIASNetworkId)
 	{
 		this.diasNetworkId = argDIASNetworkId;
 	}
-	
+
 	void persistView(String function_name, List<FingerDescriptor> fingers)
 	{
 		if( this.persistenceClient == null ) return;
-		
+
 		LinkedHashMap<String,String>			record = new LinkedHashMap<String,String>();
-		
+
 		// REM
-		// INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,fingers) 
+		// INSERT INTO pss(dt,peer,network,epoch,thread_id,func,num_fingers,fingers)
 		// VALUES ( {dt}, {peer}, {network}, {epoch}, {thread_id}, {func}, {num_fingers}, {fingers} )
 		record.put("dt", "'" + dateFormatter.format( getPeer().getClock().getCurrentTime() )  + "'" );
 		record.put("network", Integer.toString(this.diasNetworkId)  );
@@ -192,14 +192,14 @@ public class PeerSamplingService extends BasePeerlet
 		record.put("func", "'" + function_name + "'");
 		record.put("num_fingers",  Integer.toString(fingers.size()));
 		record.put("has_duplicates",  Boolean.toString(this.viewManager.hasDuplicatesInView()));
-		
+
 		// only store the finger (IP::port), which is how PSS distinguishes between peers
 		String 	finger_string = "";
 		for(FingerDescriptor f:fingers)
 			finger_string += f.getFinger() + "|";
-		
+
 		record.put("fingers", "'" + finger_string + "'");
-		
+
 		this.persistenceClient.sendSqlDataItem( new SqlDataItem( "pss", record ) );
 	}
 
@@ -222,7 +222,7 @@ public class PeerSamplingService extends BasePeerlet
     @Override
     public void init(Peer peer){
         super.init(peer);
-        
+
     }
 
     /**
@@ -295,7 +295,7 @@ public class PeerSamplingService extends BasePeerlet
 
         }
     }
-    
+
 
     /**
 	 * Extracts the finger form the random returned descriptor.
@@ -315,7 +315,7 @@ public class PeerSamplingService extends BasePeerlet
                 randFingers.add(descriptor.getFinger().clone());
             }
         }
-        
+
         return randFingers;
     }
 
@@ -346,7 +346,7 @@ public class PeerSamplingService extends BasePeerlet
             	{
 	            	final int numNeighbors = getNeighborManager().getNeighbors().size();
 	            	System.out.printf( "%s : PeersamplingService timer expired; %d peers\n", dateFormatter.format( getPeer().getClock().getCurrentTime()), numNeighbors );
-					
+
 	            	// mod eag 2017-05-26
 	            	// need to keep trying! the bootstrap process can take time on large deployments
 	            	if( numNeighbors == 0 )
@@ -358,10 +358,10 @@ public class PeerSamplingService extends BasePeerlet
 	            	{
 	            		viewManager.setBootstrapPeers(getNeighborManager().getNeighbors());
 	            		System.out.printf( "PeersamplingService: setBootstrapPeers completed\n" );
-	                		
+
 	            		scheduleMeasurements();
 	            		System.out.printf( "PeersamplingService: scheduleMeasurements completed\n" );
-	            		
+
 	            		runActiveState();
 	            		System.out.printf( "PeersamplingService: runActiveState completed\n" );
 	            	}
@@ -386,7 +386,7 @@ public class PeerSamplingService extends BasePeerlet
     private void runActiveState(){
         Timer activeStateTimer=getPeer().getClock().createNewTimer();
         activeStateTimer.addTimerListener(new TimerListener() {
-            public void timerExpired(Timer timer) 
+            public void timerExpired(Timer timer)
             {
             	synchronized( activeThread )
             	{
@@ -409,11 +409,11 @@ public class PeerSamplingService extends BasePeerlet
 	                    actionsSent=actionsSent+1.0;
 	                }
 	                viewManager.increaseAge(A);
-	                
-	            	
+
+
 	                runActiveState(); //recursive call
-	             
-	            	
+
+
             	}// synchronized
             }
         });
@@ -460,14 +460,14 @@ public class PeerSamplingService extends BasePeerlet
 	                // another message type has been received and just ignore it...
 	        }
 	        viewManager.increaseAge(A);
-	        
+
 	         // save view PSS to table
 	        if( this.peristViewActive )
 	        	persistView("runPassiveState", this.viewManager.getView());
-        	
+
         	// some debugging
         	//System.out.printf( "PeersamplingService::runPassiveState: view size = %d, duplicates = %b\n", this.viewManager.getView().size(), this.viewManager.hasDuplicatesInView()  );
-        	
+
     	}// synchronised
     }// runPassiveState
 
@@ -519,11 +519,11 @@ public class PeerSamplingService extends BasePeerlet
         getPeer().getMeasurementLogger().addMeasurementLoggerListener(new MeasurementLoggerListener()
         {
         	@Override
-			public String getId() 
+			public String getId()
 			{
 				return "PeerSamplingService";
 			}
-        	
+
             public void measurementEpochEnded(MeasurementLog log, int epochNumber)
             {
 //                for(FingerDescriptor neighbor:viewManager.getView()){
@@ -539,19 +539,19 @@ public class PeerSamplingService extends BasePeerlet
 //                reactionsSent=0.0;
                 log.log(epochNumber, PSSMeasurementTags.PAROS_MESS, parosMess);
                 parosMess=0.0;
-                
+
                 // shrinking - add eag 2017-05-02
                 final int 	epoch_min = log.getMinEpochNumber(),
     					kl = log.getMaxEpochNumber(),
     					kf = Math.max(kl - 100 , epoch_min );
-                
+
                 //System.out.printf( "PeerSamplingService: log shrink %d -> %d\n", kf, kl );
                 log.shrink(kf, kl);
-                
-                
+
+
             }
 
-			
+
         });
     }
 
